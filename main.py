@@ -9,6 +9,8 @@ from datetime import datetime
 
 import requests
 
+from html_process import process_html
+
 # 每次请求中最小的since_id，下次请求使用，新浪分页机制
 min_since_id = ''
 # 生成Session对象，用于保存Cookie
@@ -125,7 +127,8 @@ def spider_topic(post_collection):
         # 5、爬取用户信息不能太频繁，所以设置一个时间间隔
         time.sleep(random.randint(3, 6))
 
-def spider_full_content(id) -> list:
+
+def spider_full_content(id, clean=True) -> list:
     """
     GET FULL CONTENT OF THE WEIBO
     """
@@ -139,12 +142,21 @@ def spider_full_content(id) -> list:
         return
     r_json = json.loads(r.text)
     weibo_full_content = r_json['data']['longTextContent']
-    # clean_content = weibo_full_content
-    # if weibo_full_content.startswith('<a  href=', 0):
-    #   clean_content = clean_content.split('</a>')[1]
-    # if len(weibo_full_content.split('<a data-url')) > 1:
-    #   clean_content = clean_content.split('<a data-url')[0]
-    # return clean_content
+
+    # TODO: maybe using MARKDOWN grammar to retain info
+    if clean:
+        clean_content = weibo_full_content
+        if weibo_full_content.startswith('<a  href=', 0):
+            clean_content = clean_content.split('</a>')[1]
+        if len(weibo_full_content.split('<a data-url')) > 1:
+            clean_content = clean_content.split('<a data-url')[0]
+
+        # replace <br /> with \n
+        # and extract <a> tag using regex
+        clean_content = process_html(clean_content)
+
+        return clean_content
+
     return weibo_full_content
 
 def spider_user_info(uid) -> list:
