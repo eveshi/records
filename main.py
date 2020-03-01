@@ -1,6 +1,5 @@
 import re
 import os
-import csv
 import json
 import time
 import random
@@ -15,9 +14,6 @@ from html_process import process_html
 min_since_id = ''
 # 生成Session对象，用于保存Cookie
 s = requests.Session()
-# 新浪话题数据保存文件
-CSV_FILE_PATH = './sina_topic.csv'
-
 
 def login_sina():
     """
@@ -115,7 +111,6 @@ def spider_topic(post_collection):
         # 检验列表中信息是否完整
         # sina_columns数据格式：['wb-id', 'user-id', 'user-name', 'user-rank', 'content', 'forward', 'comment', 'like', 'created at', 'relative time']
         # 3、保存数据
-        save_columns_to_csv(post_dict.values())
         post_collection.insert_one(post_dict)
 
         # 4、获得最小since_id，下次请求使用
@@ -219,20 +214,7 @@ def get_basic_info_list(basic_info_html) -> list:
     return basic_infos
 
 
-def save_columns_to_csv(columns, encoding='utf-8'):
-    """
-    将数据保存到csv中
-    数据格式为：['w-id', 'latest update', 'user-id', 'user-name', 'user-rank', 'content', 'forward', 'comment', 'like', 'created at', 'relative time']
-    :param columns: ['w-id', 'latest update', 'user-id', 'user-name', 'user-rank', 'content', 'forward', 'comment', 'like', 'created at', 'relative time']
-    :param encoding:
-    :return:
-    """
-    with open(CSV_FILE_PATH, 'a', encoding=encoding) as csvfile:
-        csv_write = csv.writer(csvfile)
-        csv_write.writerow(columns)
-
-
-def patch_spider_topic():
+def patch_super_topic():
     # setup database
     client = MongoClient(f"mongodb+srv://{os.environ['DB_USER']}:{os.environ['DB_PW']}@{os.environ['DB_HOST']}")
     db = client.weibo_topic
@@ -241,16 +223,11 @@ def patch_spider_topic():
     # 爬取前先登录，登录失败则不爬取
     if not login_sina():
         return
-    # 写入数据前先清空之前的数据
-    if not os.path.exists(CSV_FILE_PATH):
-        fields_names = ['wb-id', 'latest update', 'user-id', 'user-name', 'user-rank', 'content', 'forward', 'comment', 'like', 'created at', 'relative time']
-        with open(CSV_FILE_PATH, 'a', encoding='utf-8') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fields_names)
-            writer.writeheader()
+
     for i in range(1000):
         print('第%d页' % (i + 1))
         spider_topic(post)
 
 
 if __name__ == '__main__':
-    patch_spider_topic()
+    patch_super_topic()
