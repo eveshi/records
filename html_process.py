@@ -27,3 +27,5 @@ def process_html(s):
     for step in steps:
         s = step(s)
 
+    return s
+
